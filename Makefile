@@ -69,8 +69,6 @@ build-initramfs:
 	cp etc/inittab out/initramfs/etc/inittab
 	chmod +x out/initramfs/etc/inittab
 
-	chmod +x out/initramfs/etc/init.d/rc
-
 	cd out/initramfs && \
 	find . | cpio -o -H newc | bzip2 -9 > $(ROOT_DIR)/out/initramfs.cpio.bz2
 
