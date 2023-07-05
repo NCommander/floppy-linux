@@ -64,7 +64,7 @@ build-kernel: stamp/fetch-kernel build-busybox build-initramfs
 	cp src/$(LINUX_DIR)/arch/x86/boot/bzImage out/bzImage
 
 build-busybox: stamp/fetch-busybox
-	-mkdir out/initramfs
+	-mkdir -p out/initramfs
 	cp config/busybox.config src/$(BUSYBOX_DIR)/.config
 	cd src/$(BUSYBOX_DIR) && $(MAKE) -j4 ARCH=x86 CROSS_COMPILE=i486-linux-musl-
 	cd src/$(BUSYBOX_DIR) && $(MAKE) -j4 ARCH=x86 CROSS_COMPILE=i486-linux-musl- install
