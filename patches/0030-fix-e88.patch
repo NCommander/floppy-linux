@@ -1,0 +1,13 @@
+Index: syslinux/core/bios.c
+===================================================================
+--- syslinux.orig/core/bios.c
++++ syslinux/core/bios.c
+@@ -627,7 +627,7 @@ static int bios_scan_memory(scan_memory_
+     ireg.eax.w[0] = 0x8800;
+     __intcall(0x15, &ireg, &oreg);
+     if (!(oreg.eflags.l & EFLAGS_CF) && oreg.eax.w[0]) {
+-	rv = callback(data, (addr_t) 1 << 20, oreg.ecx.w[0] << 10, SMT_FREE);
++	rv = callback(data, (addr_t) 1 << 20, oreg.eax.w[0] << 10, SMT_FREE);
+ 	if (rv)
+ 	    return rv;
+     }

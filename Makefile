@@ -1,6 +1,9 @@
 ROOT_DIR := $(dir $(realpath $(lastword $(MAKEFILE_LIST))))
 INITRAMFS_BASE=$(ROOT_DIR)/out/initramfs
 
+UBUNTU_SYSLINUX_ORIG=http://archive.ubuntu.com/ubuntu/pool/main/s/syslinux/syslinux_6.04~git20190206.bf6db5b4+dfsg1.orig.tar.xz
+UBUNTU_SYSLINUX_PKG=http://archive.ubuntu.com/ubuntu/pool/main/s/syslinux/syslinux_6.04~git20190206.bf6db5b4+dfsg1-3ubuntu1.debian.tar.xz
+
 LINUX_DIR=linux-6.4
 LINUX_TARBALL=$(LINUX_DIR).tar.xz
 LINUX_KERNEL_URL=https://cdn.kernel.org/pub/linux/kernel/v6.x/$(LINUX_TARBALL)
@@ -29,6 +32,17 @@ stamp/fetch-busybox:
 	cd src && tar -xvf ../dist/$(BUSYBOX_TARBALL)
 	touch stamp/fetch-busybox		
 
+stamp/fetch-syslinux:
+	-mkdir -p dist src stamp
+	cd dist && wget $(UBUNTU_SYSLINUX_ORIG) -O syslinux_orig.tar.xz
+	cd dist && wget $(UBUNTU_SYSLINUX_PKG) -O syslinux_pkg.tar.xz
+	cd src && tar -xvf ../dist/syslinux_orig.tar.xz
+	cd src && mv syslinux-6.04~git20190206.bf6db5b4 syslinux
+	cd src/syslinux && tar -xvf ../../dist/syslinux_pkg.tar.xz
+	cd src/syslinux && QUILT_PATCHES=debian/patches quilt push -a
+	cd src/syslinux && patch -p1 < ../../patches/0030-fix-e88.patch
+	touch stamp/fetch-syslinux		
+
 kernelmenuconfig: stamp/fetch-kernel
 	cp config/kernel.config src/$(LINUX_DIR)/.config
 	cd src/$(LINUX_DIR) && make ARCH=x86 CROSS_COMPILE=i486-linux-musl- menuconfig
@@ -38,6 +52,10 @@ busyboxmenuconfig: stamp/fetch-busybox
 	cp config/busybox.config src/$(BUSYBOX_DIR)/.config
 	cd src/$(BUSYBOX_DIR) && make ARCH=x86 CROSS_COMPILE=i486-linux-musl- menuconfig
 	cp src/$(BUSYBOX_DIR)/.config config/busybox.config
+
+build-syslinux: stamp/fetch-syslinux
+	cd src/syslinux && make bios PYTHON=python3 
+	cd src/syslinux && make bios install INSTALLROOT=`pwd`/../../out/syslinux PYTHON=python3
 
 build-kernel: stamp/fetch-kernel build-busybox build-initramfs
 	-mkdir out
@@ -72,10 +90,10 @@ build-initramfs:
 	cd out/initramfs && \
 	find . | cpio -o -H newc | bzip2 -9 > $(ROOT_DIR)/out/initramfs.cpio.bz2
 
-build-floppy: build-kernel build-initramfs
+build-floppy: build-kernel build-initramfs build-syslinux
 	dd if=/dev/zero of=./floppy_linux.img bs=1k count=1440
 	mkdosfs floppy_linux.img
-	syslinux --install floppy_linux.img
+	out/syslinux/usr/bin/syslinux --install floppy_linux.img
 	mcopy -i floppy_linux.img config/syslinux.cfg ::
 	mcopy -i floppy_linux.img out/bzImage  ::
 	mcopy -i floppy_linux.img out/initramfs.cpio.bz2  ::rootfs.ram
