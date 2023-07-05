@@ -100,4 +100,4 @@ build-floppy: build-kernel build-initramfs build-syslinux
 
 clean:
 	echo "Making a fresh build ..."
-	-rm -rf src dist stamp
+	-rm -rf src dist stamp out
